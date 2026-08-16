@@ -1,5 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
+HEADERS = src/cloner.h
 BUILD_DIR = build
 SRCS = src/main.c src/posix.c src/windows.c src/util.c
 
