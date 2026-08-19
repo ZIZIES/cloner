@@ -1,5 +1,7 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <dirent.h>
 #include "cloner.h"
 
@@ -25,24 +27,51 @@ bool flatten_dir(const char *subdir) {
         return false;
     }
 
+    // collect names first - renaming entries out from under readdir is
+    // undefined and can silently skip files
+    char **names = NULL;
+    size_t count = 0, cap = 0;
     struct dirent *entry;
-    char src[1024], dst[1024];
 
     while ((entry = readdir(d)) != NULL) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
 
-        snprintf(src, sizeof(src), "%s/%s", subdir, entry->d_name);
-        snprintf(dst, sizeof(dst), "./%s", entry->d_name);
-
-        if (rename(src, dst) != 0) {
-            perror("rename failed");
-            closedir(d);
-            return false;
+        if (count == cap) {
+            size_t new_cap = cap ? cap * 2 : 32;
+            char **grown = realloc(names, new_cap * sizeof(*names));
+            if (!grown) {
+                perror("realloc failed");
+                goto fail;
+            }
+            names = grown;
+            cap = new_cap;
         }
+
+        names[count] = strdup(entry->d_name);
+        if (!names[count]) {
+            perror("strdup failed");
+            goto fail;
+        }
+        count++;
     }
 
     closedir(d);
+    d = NULL;
+
+    char src[1024], dst[1024];
+    for (size_t i = 0; i < count; i++) {
+        snprintf(src, sizeof(src), "%s/%s", subdir, names[i]);
+        snprintf(dst, sizeof(dst), "./%s", names[i]);
+
+        if (rename(src, dst) != 0) {
+            perror("rename failed");
+            goto fail;
+        }
+    }
+
+    for (size_t i = 0; i < count; i++) free(names[i]);
+    free(names);
 
     if (rmdir(subdir) != 0) {
         perror("rmdir failed");
@@ -50,4 +79,10 @@ bool flatten_dir(const char *subdir) {
     }
 
     return true;
+
+fail:
+    for (size_t i = 0; i < count; i++) free(names[i]);
+    free(names);
+    if (d) closedir(d);
+    return false;
 }

@@ -11,7 +11,7 @@ bool run_git_clone(const char *url) {
     if (pid < 0) { perror("fork failed"); return false; }
 
     if (pid == 0) {
-        execvp("git", (char *[]){"git", "clone", url, NULL});
+        execvp("git", (char *[]){"git", "clone", (char *)url, NULL});
         perror("execvp failed");
         exit(1);
     }

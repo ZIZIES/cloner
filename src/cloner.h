@@ -2,6 +2,7 @@
 #define CLONER_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 bool run_git_clone(const char *url);
 void get_repo_name(const char *url, char *out, size_t out_size);

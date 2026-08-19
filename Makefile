@@ -4,7 +4,7 @@ HEADERS = src/cloner.h
 BUILD_DIR = build
 SRCS = src/main.c src/posix.c src/windows.c src/util.c
 
-$(BUILD_DIR)/cloner: $(SRCS)
+$(BUILD_DIR)/cloner: $(SRCS) $(HEADERS)
 	mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $(SRCS)
 
